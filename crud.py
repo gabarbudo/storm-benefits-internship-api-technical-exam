@@ -42,9 +42,6 @@ def get_company(id):
 
 @app.route('/company/', methods = ['POST'])
 def create_company():
-    # if not request.json or not 'name' in request.json:
-    #     abort(400)
-
     name = request.json['name']
     num_employees = request.json['num_employees']
     location = request.json['location']
