@@ -7,6 +7,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root@localhost/companyd
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 
+# company model
 class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), unique=True)
@@ -22,6 +23,7 @@ class Company(db.Model):
         self.email = email
         self.industry = industry
 
+# ensures that all endpoints have a JSON response
 class CompanySchema(ma.Schema):
 	class Meta:
 		fields = ('name', 'num_employees', 'location', 'email', 'industry')
@@ -29,17 +31,20 @@ class CompanySchema(ma.Schema):
 company_schema = CompanySchema()
 companies_schema = CompanySchema(many=True)
 
+# lists all company records
 @app.route('/company/', methods = ['GET'])
 def index():
 	all_companies = Company.query.all()
 	result = companies_schema.dump(all_companies)
 	return jsonify(result.data)
 
+# gets company record details by id
 @app.route('/company/<int:id>/')
 def get_company(id):
 	company = Company.query.get(id)
 	return company_schema.jsonify(company)
 
+# inserts new company record
 @app.route('/company/', methods = ['POST'])
 def create_company():
     name = request.json['name']
@@ -56,6 +61,7 @@ def create_company():
 
     return jsonify(result.data), 201
 
+# deletes company record
 @app.route('/company/<int:id>/', methods = ['DELETE'])
 def delete_company(id):
 	company = Company.query.get(id)
@@ -64,6 +70,7 @@ def delete_company(id):
 
 	return jsonify({ 'result': True })
 
+# updates existing company record
 @app.route('/company/<int:id>/', methods = ['PUT'])
 def update_company(id):
     company = Company.query.get(id)
@@ -82,6 +89,7 @@ def update_company(id):
     db.session.commit()
     return company_schema.jsonify(company)
 
+# filters list of companies by company name using wildcard search
 @app.route('/company/<string:name>/')
 def search_company(name):
 	company = Company.name.like('%' + name + '%')
