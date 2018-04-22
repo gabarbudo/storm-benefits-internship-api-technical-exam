@@ -16,7 +16,7 @@ $ pip install marshmallow-sqlalchemy
 $ pip install PyMySQL
 ```
 ## Instructions
-### 1. Generate MySQL Database
+### 1. Generate MySQL database
 
 
 * Open terminal in the folder of the Flask application.
