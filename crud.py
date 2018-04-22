@@ -1,0 +1,97 @@
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root@localhost/companydb'
+db = SQLAlchemy(app)
+ma = Marshmallow(app)
+
+class Company(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), unique=True)
+    num_employees = db.Column(db.Integer)
+    location = db.Column(db.String(255))
+    email = db.Column(db.String(255), unique=True)
+    industry = db.Column(db.String(255))
+
+    def __init__(self, name, num_employees, location, email, industry):
+        self.name = name
+        self.num_employees = num_employees
+        self.location = location
+        self.email = email
+        self.industry = industry
+
+class CompanySchema(ma.Schema):
+	class Meta:
+		fields = ('name', 'num_employees', 'location', 'email', 'industry')
+
+company_schema = CompanySchema()
+companies_schema = CompanySchema(many=True)
+
+@app.route('/company/', methods = ['GET'])
+def index():
+	all_companies = Company.query.all()
+	result = companies_schema.dump(all_companies)
+	return jsonify(result.data)
+
+@app.route('/company/<int:id>/')
+def get_company(id):
+	company = Company.query.get(id)
+	return company_schema.jsonify(company)
+
+@app.route('/company/', methods = ['POST'])
+def create_company():
+    # if not request.json or not 'name' in request.json:
+    #     abort(400)
+
+    name = request.json['name']
+    num_employees = request.json['num_employees']
+    location = request.json['location']
+    email = request.json['email']
+    industry = request.json['industry']
+
+    new_company = Company(name, num_employees, location, email, industry)
+    result = company_schema.dump(new_company)
+
+    db.session.add(new_company)
+    db.session.commit()
+
+    return jsonify(result.data), 201
+
+@app.route('/company/<int:id>/', methods = ['DELETE'])
+def delete_company(id):
+	company = Company.query.get(id)
+	db.session.delete(company)
+	db.session.commit()
+
+	return jsonify({ 'result': True })
+
+@app.route('/company/<int:id>/', methods = ['PUT'])
+def update_company(id):
+    company = Company.query.get(id)
+    name = request.json['name']
+    num_employees = request.json['num_employees']
+    location = request.json['location']
+    email = request.json['email']
+    industry = request.json['industry']
+
+    company.name = name
+    company.num_employees = num_employees
+    company.location = location
+    company.email = email
+    company.industry = industry
+    
+    db.session.commit()
+    return company_schema.jsonify(company)
+
+@app.route('/company/<string:name>/')
+def search_company(name):
+	company = Company.name.like('%' + name + '%')
+	filter_company = Company.query.filter(company).all()
+	result = companies_schema.dump(filter_company)
+	return jsonify(result.data)
+
+if __name__ == '__main__':
+	app.run()
+
